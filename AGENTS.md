@@ -206,13 +206,23 @@ con.execute("INSERT INTO cards (id,nid,did,ord,mod,usn,type,queue,due,ivl,factor
 where `strip_html(s) = html.unescape(re.sub(r"<[^>]+>","",s))` and
 `csum(s) = int(hashlib.sha1(strip_html(s).encode("utf-8")).hexdigest()[:8], 16)`.
 
-### Visual preview (recommended before shipping)
-Render Front `+ <hr> +` Back inside the Basic CSS and screenshot with headless Chrome:
+### Visual preview (REQUIRED before shipping — and show it to the user)
+Every time you create or edit a card, render a PNG preview **and open it so the user can
+see the card**. Render Front `+ <hr> +` Back inside the Basic CSS, screenshot with headless
+Chrome, then `open` the PNG (macOS Preview) so it surfaces to the user:
 ```
 .card{font-family:arial;font-size:20px;color:black;background-color:white;padding:16px;max-width:900px;}
-"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless --disable-gpu \
-  --force-device-scale-factor=2 --window-size=940,2200 --screenshot=out.png file://…/preview.html
+# Use --headless=old : --headless=new HANGS in this environment (empty PNG, never exits).
+# Use an isolated --user-data-dir so it never collides with the user's running Chrome.
+TMP=$(mktemp -d)
+"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless=old --disable-gpu \
+  --no-first-run --no-default-browser-check --user-data-dir="$TMP" \
+  --hide-scrollbars --force-device-scale-factor=2 --window-size=960,4600 \
+  --screenshot="$PWD/card.png" "file://$PWD/preview.html" ; rm -rf "$TMP"
+open card.png              # surface the rendered card to the user
 ```
+Make the `--window-size` height tall enough that nothing is clipped (multi-solution cards
+are long); also `view` the PNG yourself to confirm the full card rendered before shipping.
 
 ### Bulk edits (many cards)
 Note ids are disjoint, so bulk work parallelizes cleanly: produce one output per note
